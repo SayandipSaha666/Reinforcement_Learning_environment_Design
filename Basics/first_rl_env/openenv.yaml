@@ -1,0 +1,89 @@
+spec_version: 1
+name: research_assistant_env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+
+description: >
+  RL environment where an AI agent learns to search, filter, summarize,
+  and explain research papers given a natural language query.
+  Multi-phase FSM with dense rewards and deterministic grading.
+
+tasks:
+  - name: single_topic_retrieval
+    difficulty: easy
+    description: >
+      Simple single-topic query about transformer architecture.
+      Agent must find 3 clearly relevant papers from 10 candidates,
+      summarize 1-2 papers, and explain findings.
+
+  - name: ambiguous_query_filtering
+    difficulty: medium
+    description: >
+      Ambiguous query about neural network uncertainty.
+      Agent must filter across Bayesian, dropout, and ensemble
+      sub-topics, summarize 3+ papers, and explain trade-offs.
+
+  - name: multi_concept_synthesis
+    difficulty: hard
+    description: >
+      Complex multi-concept query about RL + LLMs for decision-making.
+      Agent must synthesize across 4 sub-themes (RLHF, tool use,
+      RL decision-making, planning) with cross-paper connections.
+
+action_schema:
+  type: object
+  properties:
+    action_type:
+      type: string
+      enum: [search, filter, summarize, explain, finalize]
+      description: The type of action to perform
+    query_terms:
+      type: string
+      description: Search keywords (for search action)
+    paper_ids:
+      type: array
+      items:
+        type: string
+      description: Paper IDs to keep (for filter action)
+    paper_id:
+      type: string
+      description: Target paper ID (for summarize/explain)
+    content:
+      type: string
+      description: Agent-generated text (for summarize/explain)
+  required:
+    - action_type
+
+observation_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: The research question for this episode
+    current_phase:
+      type: string
+      enum: [search, filter, summarize, explain, finalize]
+    available_actions:
+      type: array
+      items:
+        type: string
+    retrieved_papers:
+      type: array
+      description: Papers from search results
+    filtered_papers:
+      type: array
+      description: Papers selected by filter
+    summaries_so_far:
+      type: object
+      description: paper_id -> summary text
+    explanations_so_far:
+      type: object
+      description: paper_id -> explanation text
+    last_action_feedback:
+      type: string
+    step_count:
+      type: integer
+    max_steps:
+      type: integer

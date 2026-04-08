@@ -11,3 +11,14 @@
 #### https://www.youtube.com/watch?v=ELE2_Mftqoc&t=90s
 #### https://www.youtube.com/watch?v=vufTSJbzKGU&t=287s
 #### https://huggingface.co/learn/deep-rl-course/en/unit2/q-learning-example
+
+
+
+#### https://github.com/meta-pytorch/OpenEnv/blob/main/tutorial/01-environments.md
+#### https://github.com/meta-pytorch/OpenEnv/blob/main/envs/echo_env/README.md
+#### https://meta-pytorch.org/OpenEnv/
+#### https://huggingface.co/spaces?q=agent+environment&category=agent-environment&search=openenv
+#### https://huggingface.co/spaces?q=openenv+org
+#### https://huggingface.co/openenv/spaces
+#### https://github.com/huggingface/openenv-course/blob/main/module-1/README.md
+

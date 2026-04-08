@@ -5,7 +5,7 @@ import numpy as np
 
 cliffEnv = gym.make("CliffWalking-v1")
 
-q_table = pkl.load(open("sarsa_q_table.pkl", "rb"))
+q_table = pkl.load(open("q_learning_q_table.pkl", "rb"))
 
 def policy(state):
     return int(np.argmax(q_table[state]))
