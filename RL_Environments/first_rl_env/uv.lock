@@ -1599,12 +1599,13 @@ core = [
 ]
 
 [[package]]
-name = "openenv-first-rl-env"
+name = "openenv-research-assistant"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "openenv-core", extra = ["core"] },
+    { name = "pydantic" },
 ]
 
 [package.optional-dependencies]
@@ -1617,6 +1618,7 @@ dev = [
 requires-dist = [
     { name = "huggingface-hub", specifier = ">=1.9.0" },
     { name = "openenv-core", extras = ["core"], specifier = ">=0.2.2" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
 ]
