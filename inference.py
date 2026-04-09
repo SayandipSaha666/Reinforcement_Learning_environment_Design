@@ -47,6 +47,7 @@ import textwrap
 from typing import List, Optional
 
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from models import ResearchAction, ResearchObservation
 from server.research_env import ResearchAssistantEnvironment
@@ -195,7 +196,7 @@ def get_model_action(
     user_prompt = build_user_prompt(observation, step)
 
     try:
-        messages = [
+        messages: list[ChatCompletionMessageParam]  = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
@@ -205,7 +206,7 @@ def get_model_action(
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
         )
-        text = (completion.choices[0].message["content"] or "").strip()
+        text = (completion.choices[0].message.content or "").strip()
         return parse_model_response(text)
     except Exception as exc:
         print(f"[DEBUG] Model request failed: {exc}", flush=True)
