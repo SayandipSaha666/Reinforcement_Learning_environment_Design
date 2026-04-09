@@ -48,8 +48,8 @@ from typing import List, Optional
 
 from huggingface_hub import InferenceClient
 
-from .models import ResearchAction, ResearchObservation
-from .server.research_env import ResearchAssistantEnvironment
+from models import ResearchAction, ResearchObservation
+from server.research_env import ResearchAssistantEnvironment
 
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 
