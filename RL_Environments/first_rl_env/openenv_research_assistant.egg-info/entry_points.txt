@@ -1,3 +1,0 @@
-[console_scripts]
-openenv-research-assistant = server.app:main
-server = server.app:main
