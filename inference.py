@@ -5,14 +5,14 @@ MANDATORY
 - Before submitting, ensure the following variables are defined in your environment configuration:
     API_BASE_URL   The API endpoint for the LLM.
     MODEL_NAME     The model identifier to use for inference.
-    HF_TOKEN       Your Hugging Face / API key.
+    OPENAI_API_KEY Your OpenAI API key.
 
 - Defaults are set only for MODEL_NAME
     (and should reflect your active inference setup):
     MODEL_NAME = os.getenv("MODEL_NAME", "<your-active-model>")
 
 - The inference script must be named `inference.py` and placed in the root directory of the project
-- Participants must use Hugging Face Inference API for all LLM calls using above variables
+- Participants must use OpenAI for all LLM calls using above variables
 
 STDOUT FORMAT
 - The script must emit exactly three line types to stdout, in this order:
@@ -46,14 +46,14 @@ import os
 import textwrap
 from typing import List, Optional
 
-from huggingface_hub import InferenceClient
+from openai import OpenAI
 
 from models import ResearchAction, ResearchObservation
 from server.research_env import ResearchAssistantEnvironment
 
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_KEY = os.getenv("API_BASE_URL") or os.getenv("API_KEY") or os.getenv("HF_TOKEN")
 
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+MODEL_NAME = os.getenv("MODEL_NAME") or "gpt-4o-mini"
 TASK_NAME = os.getenv("RESEARCH_TASK", "single_topic_retrieval")
 BENCHMARK = os.getenv("RESEARCH_BENCHMARK", "research_assistant_env")
 MAX_STEPS = 15
@@ -186,7 +186,7 @@ def parse_model_response(response_text: str) -> dict:
 
 
 def get_model_action(
-    client: InferenceClient,
+    client: OpenAI,
     observation: ResearchObservation,
     step: int,
     history: List[str],
@@ -199,12 +199,13 @@ def get_model_action(
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
-        completion = client.chat_completion(
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
             messages=messages,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
         )
-        text = (completion.choices[0].message.content or "").strip()
+        text = (completion.choices[0].message["content"] or "").strip()
         return parse_model_response(text)
     except Exception as exc:
         print(f"[DEBUG] Model request failed: {exc}", flush=True)
@@ -241,7 +242,7 @@ def format_action_str(action: ResearchAction) -> str:
 
 
 def main() -> None:
-    client = InferenceClient(model=MODEL_NAME, token=API_KEY)
+    client = OpenAI(api_key=API_KEY)
 
     # Set task via env var so environment picks it up
     os.environ["RESEARCH_TASK"] = TASK_NAME
