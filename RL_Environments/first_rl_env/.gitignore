@@ -1,2 +1,4 @@
 .env
 .dockerignore
+resources.md
+.gitignore

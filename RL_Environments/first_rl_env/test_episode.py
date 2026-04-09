@@ -26,7 +26,8 @@ async def run_episode():
         # 1. RESET
         await ws.send(json.dumps({"type": "reset"}))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
         print("[DEBUG] Raw response:", json.dumps(resp, indent=2, default=str)[:800])
         print("=" * 60)
         print(f"Task: {obs.get('query', 'N/A')}")
@@ -35,14 +36,16 @@ async def run_episode():
         # 2. SEARCH
         await ws.send(json.dumps({
             "type": "step",
-            "action": {
+            "data": {
                 "action_type": "search",
                 "query_terms": "transformer attention mechanism NLP"
             }
         }))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
-        reward = resp.get("reward", obs.get("reward", 0))
+        print("[DEBUG SEARCH] Raw response:", json.dumps(resp, indent=2, default=str)[:800])
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
+        reward = data.get("reward", obs.get("reward", 0))
         papers = obs.get("retrieved_papers", [])
         print(f"\nSEARCH: {len(papers)} papers | Reward: {reward:.4f}")
         for p in papers[:5]:
@@ -56,11 +59,12 @@ async def run_episode():
         fids = ids[:3] if len(ids) >= 3 else ids
         await ws.send(json.dumps({
             "type": "step",
-            "action": {"action_type": "filter", "paper_ids": fids}
+            "data": {"action_type": "filter", "paper_ids": fids}
         }))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
-        reward = resp.get("reward", obs.get("reward", 0))
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
+        reward = data.get("reward", obs.get("reward", 0))
         filtered = obs.get("filtered_papers", [])
         print(f"\nFILTER: {len(filtered)} kept | Reward: {reward:.4f}")
         print(f"  {obs.get('last_action_feedback','')}")
@@ -69,7 +73,7 @@ async def run_episode():
         sid = filtered[0]["paper_id"] if filtered else (fids[0] if fids else "paper_001")
         await ws.send(json.dumps({
             "type": "step",
-            "action": {
+            "data": {
                 "action_type": "summarize",
                 "paper_id": sid,
                 "content": (
@@ -81,15 +85,16 @@ async def run_episode():
             }
         }))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
-        reward = resp.get("reward", obs.get("reward", 0))
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
+        reward = data.get("reward", obs.get("reward", 0))
         print(f"\nSUMMARIZE {sid} | Reward: {reward:.4f}")
         print(f"  {obs.get('last_action_feedback','')}")
 
         # 5. EXPLAIN
         await ws.send(json.dumps({
             "type": "step",
-            "action": {
+            "data": {
                 "action_type": "explain",
                 "paper_id": sid,
                 "content": (
@@ -101,20 +106,22 @@ async def run_episode():
             }
         }))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
-        reward = resp.get("reward", obs.get("reward", 0))
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
+        reward = data.get("reward", obs.get("reward", 0))
         print(f"\nEXPLAIN {sid} | Reward: {reward:.4f}")
         print(f"  {obs.get('last_action_feedback','')}")
 
         # 6. FINALIZE
         await ws.send(json.dumps({
             "type": "step",
-            "action": {"action_type": "finalize"}
+            "data": {"action_type": "finalize"}
         }))
         resp = json.loads(await ws.recv())
-        obs = resp.get("observation", resp)
-        reward = resp.get("reward", obs.get("reward", 0))
-        done = resp.get("done", obs.get("done", False))
+        data = resp.get("data", resp)
+        obs = data.get("observation", data)
+        reward = data.get("reward", obs.get("reward", 0))
+        done = data.get("done", obs.get("done", False))
 
         print("\n" + "=" * 60)
         print(f"FINAL SCORE: {reward:.4f}  Done: {done}")

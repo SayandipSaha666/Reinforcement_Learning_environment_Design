@@ -1601,7 +1601,7 @@ core = [
 [[package]]
 name = "openenv-research-assistant"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "openenv-core", extra = ["core"] },

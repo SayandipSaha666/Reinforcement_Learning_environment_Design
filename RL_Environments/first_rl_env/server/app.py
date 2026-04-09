@@ -74,25 +74,22 @@ app = create_app(
 
 #     uvicorn.run(app, host=host, port=port)
 
-def main():
+def main(host: str = "0.0.0.0", port: int = 8000):
     """
     Entry point for OpenEnv CLI.
     """
-    import argparse
+    # import argparse
     import uvicorn
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8000)
+    # if host is None or port is None:
+    #     parser = argparse.ArgumentParser()
+    #     parser.add_argument("--host", type=str, default="0.0.0.0")
+    #     parser.add_argument("--port", type=int, default=8000)
+    #     args, _ = parser.parse_known_args()
+    #     host = host or args.host
+    #     port = port or args.port
 
-    args = parser.parse_args()
-
-    uvicorn.run(app, host=args.host, port=args.port)
+    uvicorn.run(app, host=host, port=port)
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    args = parser.parse_args()
-    main(port=args.port)
+    main()

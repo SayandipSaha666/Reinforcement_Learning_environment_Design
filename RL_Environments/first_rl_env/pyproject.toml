@@ -33,4 +33,8 @@ dev = [
 
 
 [tool.uv]
-package = false
+package = true
+
+[tool.setuptools.packages.find]
+include = ["server*"]
+exclude = ["data*", "outputs*", "graders*"]
