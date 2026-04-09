@@ -18,6 +18,7 @@ dependencies = [
     # Core OpenEnv runtime (provides FastAPI server + HTTP client types)
     "openenv-core[core]>=0.2.2",
     # Pydantic for typed models
+    "openenv[cli]>=0.1.13",
     "pydantic>=2.0",
 ]
 
