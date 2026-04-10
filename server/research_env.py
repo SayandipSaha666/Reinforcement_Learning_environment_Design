@@ -11,7 +11,7 @@ state → internal state.
 """
 
 import os
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 from uuid import uuid4
 from dotenv import load_dotenv
 load_dotenv()
@@ -73,6 +73,7 @@ class ResearchAssistantEnvironment(Environment):
         self._task_name = DEFAULT_TASK
         self._task = get_task(self._task_name)
         self._grader = ResearchGrader(self._task)
+        self._custom_query = os.getenv("RESEARCH_QUERY", "").strip()
 
         # Episode state
         self._current_phase: str = "search"
@@ -84,20 +85,28 @@ class ResearchAssistantEnvironment(Environment):
         self._cumulative_reward: float = 0.0
         self._max_steps: int = MAX_STEPS
 
-    def reset(self) -> ResearchObservation:
+    def reset(self, seed: Optional[int] = None, episode_id: Optional[str] = None, **kwargs) -> ResearchObservation:
         """
         Reset the environment for a new episode.
+
+        Args:
+            seed: optional RNG seed from the OpenEnv runtime.
+            episode_id: optional episode identifier.
+            **kwargs: runtime-provided options such as task_name or query.
 
         Returns:
             ResearchObservation with the research query and initial state.
         """
-        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self._state = State(episode_id=episode_id or str(uuid4()), step_count=0)
 
-        # Re-read task (allows changing task via env var between episodes)
-        task_name = os.getenv("RESEARCH_TASK", DEFAULT_TASK)
+        # Allow OpenEnv runtime to specify task_name or task
+        task_name = kwargs.get("task_name") or kwargs.get("task") or os.getenv("RESEARCH_TASK", DEFAULT_TASK)
         self._task_name = task_name
         self._task = get_task(task_name)
         self._grader = ResearchGrader(self._task)
+
+        # Allow OpenEnv runtime to supply a custom query for this episode
+        self._custom_query = kwargs.get("query", os.getenv("RESEARCH_QUERY", "")).strip()
 
         # Reset episode state
         self._current_phase = "search"
@@ -109,7 +118,7 @@ class ResearchAssistantEnvironment(Environment):
         self._cumulative_reward = 0.0
 
         return ResearchObservation(
-            query=self._task.query,
+            query=self._custom_query if self._custom_query else self._task.query,
             current_phase="search",
             available_actions=["search"],
             retrieved_papers=[],
