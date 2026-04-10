@@ -62,7 +62,10 @@ class ResearchGrader:
             + w["explanation_quality"] * expl
         )
 
-        return max(0.0, min(1.0, score))
+        # Validator requires strict task scores in (0, 1).
+        # Clamp to a small open interval so boundary values are never returned.
+        epsilon = 1e-6
+        return max(epsilon, min(1.0 - epsilon, score))
 
     # -----------------------------------------------------------------
     # Individual metrics

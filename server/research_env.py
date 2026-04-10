@@ -13,6 +13,8 @@ state → internal state.
 import os
 from typing import Dict, List, Set
 from uuid import uuid4
+from dotenv import load_dotenv
+load_dotenv()
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
