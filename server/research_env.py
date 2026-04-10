@@ -181,6 +181,7 @@ class ResearchAssistantEnvironment(Environment):
                 self._summaries,
                 self._explanations,
             )
+            partial_score = self._bound_score(partial_score)
             reward = partial_score * 0.5
             feedback += f" [STEP LIMIT REACHED: partial score {partial_score:.2f}]"
 
@@ -307,6 +308,7 @@ class ResearchAssistantEnvironment(Environment):
             self._summaries,
             self._explanations,
         )
+        final_score = self._bound_score(final_score)
 
         feedback = (
             f"Episode complete. Final score: {final_score:.3f}. "
@@ -353,6 +355,14 @@ class ResearchAssistantEnvironment(Environment):
                 "action_history": list(self._action_history),
             },
         )
+
+    def _bound_score(self, score: float) -> float:
+        """Ensure returned scores are strictly inside (0, 1)."""
+        if score <= 0.0:
+            return 0.001
+        if score >= 1.0:
+            return 0.999
+        return score
 
     @staticmethod
     def _build_paper_infos(paper_ids: List[str]) -> List[PaperInfo]:
