@@ -9,9 +9,9 @@ Each task specifies:
 - grading_weights: per-metric weights for final score computation
 """
 
-from easy import EASY_TASK
-from medium import MEDIUM_TASK
-from hard import HARD_TASK
+from .easy import EASY_TASK
+from .medium import MEDIUM_TASK
+from .hard import HARD_TASK
 
 TASK_REGISTRY = {
     "single_topic_retrieval": EASY_TASK,
