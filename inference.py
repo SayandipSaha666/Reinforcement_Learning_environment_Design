@@ -45,6 +45,8 @@ import json
 import os
 import textwrap
 from typing import List, Optional
+from dotenv import load_dotenv
+load_dotenv()
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -52,7 +54,13 @@ from openai.types.chat import ChatCompletionMessageParam
 from models import ResearchAction, ResearchObservation
 from server.research_env import ResearchAssistantEnvironment
 
-API_KEY = os.getenv("API_BASE_URL") or os.getenv("API_KEY") or os.getenv("HF_TOKEN")
+BASE_URL = os.getenv("API_BASE_URL")
+API_KEY = os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("HF_TOKEN")
+
+if not API_KEY:
+    raise RuntimeError("Missing API key: set API_KEY or OPENAI_API_KEY in the environment.")
+if not BASE_URL:
+    raise RuntimeError("Missing API base URL: set API_BASE_URL in the environment.")
 
 MODEL_NAME = os.getenv("MODEL_NAME") or "gpt-4o-mini"
 TASK_NAME = os.getenv("RESEARCH_TASK", "single_topic_retrieval")
@@ -243,7 +251,7 @@ def format_action_str(action: ResearchAction) -> str:
 
 
 def main() -> None:
-    client = OpenAI(api_key=API_KEY)
+    client = OpenAI(api_key=API_KEY,base_url=BASE_URL)
 
     # Set task via env var so environment picks it up
     os.environ["RESEARCH_TASK"] = TASK_NAME
