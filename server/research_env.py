@@ -105,6 +105,13 @@ class ResearchAssistantEnvironment(Environment):
         self._task = get_task(task_name)
         self._grader = ResearchGrader(self._task)
 
+        # ── Debug assertion: grader must be valid before any step runs ──
+        # This guards against "not enough tasks with graders" errors from the validator,
+        # which may inspect the grader before calling reset() or during a dry-run.
+        assert self._grader is not None, "[reset] grader is None — cannot proceed"
+        assert hasattr(self._grader, "grade"), "[reset] grader missing grade() method"
+        assert hasattr(self._grader, "compute_relevance"), "[reset] grader missing compute_relevance()"
+
         # Allow OpenEnv runtime to supply a custom query for this episode
         self._custom_query = kwargs.get("query", os.getenv("RESEARCH_QUERY", "")).strip()
 
@@ -176,6 +183,13 @@ class ResearchAssistantEnvironment(Environment):
         elif action.action_type == "finalize":
             reward, feedback, done = self._handle_finalize()
 
+        # ── Debug assertion: every grader-returned reward must be in (0, 1) ──
+        # This catches if any action handler returns a score of exactly 0 or 1
+        assert 0.0 < reward < 1.0, (
+            f"[step:{step_num}] INVALID reward {reward!r} from action '{action.action_type}' "
+            f"— must be strictly in (0, 1). Feedback: {feedback[:100]}"
+        )
+
         # --- Penalize repeated identical actions ---
         if len(self._action_history) >= 2 and self._action_history[-1] == self._action_history[-2]:
             reward *= 0.5
@@ -191,6 +205,10 @@ class ResearchAssistantEnvironment(Environment):
                 self._explanations,
             )
             partial_score = self._bound_score(partial_score)
+            assert 0.0 < partial_score < 1.0, (
+                f"[step:{step_num}] INVALID partial_score {partial_score!r} at step limit "
+                f"— must be strictly in (0, 1)"
+            )
             reward = partial_score * 0.5
             feedback += f" [STEP LIMIT REACHED: partial score {partial_score:.2f}]"
 
@@ -317,7 +335,16 @@ class ResearchAssistantEnvironment(Environment):
             self._summaries,
             self._explanations,
         )
+        # The grader already bounds; this is a redundant safety net
         final_score = self._bound_score(final_score)
+
+        # ── Debug assertion: validate final score before returning ──
+        # This catches any upstream bugs where a metric returns exactly 0 or 1
+        assert 0.0 < final_score < 1.0, (
+            f"[finalize] INVALID score {final_score!r} — must be strictly in (0, 1). "
+            f"filtered={self._filtered_paper_ids}, summaries={list(self._summaries.keys())}, "
+            f"explanations={list(self._explanations.keys())}"
+        )
 
         feedback = (
             f"Episode complete. Final score: {final_score:.3f}. "
