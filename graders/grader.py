@@ -2,7 +2,7 @@
 Deterministic Grader for the Research Paper Assistant Environment
 ==================================================================
 
-Computes a final score in [0.0, 1.0] based on four metrics:
+Computes a final score in (0, 1) based on four metrics:
   - relevance:            F1 of filtered papers vs ground truth
   - correctness:          keyword overlap of agent summaries vs reference keywords
   - completeness:         sub-topic coverage + minimum summary/explanation counts
@@ -10,12 +10,63 @@ Computes a final score in [0.0, 1.0] based on four metrics:
 
 All computation is deterministic — no randomness, no external API calls.
 Uses regex-based tokenization (no NLTK dependency).
+
+SCORE VALIDATION: OpenEnv requires ALL task scores to be strictly inside (0, 1).
+Score must be > 0.0 AND < 1.0. Values of exactly 0.0 or 1.0 are INVALID.
+All scores are bounded using _safe_bound() to guarantee strict open-interval compliance.
 """
 
+import math
 import re
 from typing import Dict, List, Set
 
 from data.paper_corpus import get_paper_by_id
+
+
+# Safety epsilon: ensures final scores are strictly inside (0, 1)
+# Using 1e-6 gives 6 orders of magnitude of breathing room from 0 and 1,
+# while remaining indistinguishable from "perfect" scores in practice.
+_SCORE_EPSILON = 1e-6
+
+
+def _safe_bound(score: float) -> float:
+    """
+    Bound a score to the strict open interval (0, 1).
+
+    This is the SINGLE SOURCE OF TRUTH for all score normalization.
+    Every score — final composites and intermediate metrics — passes
+    through here before being returned or used in further computation.
+
+    Args:
+        score: Raw score from any computation.
+
+    Returns:
+        A float strictly inside (0, 1). Guarantees:
+        - score > 0.0  (never 0.0, never negative)
+        - score < 1.0  (never 1.0, never above)
+
+    Floating-point edge cases handled:
+        - NaN               → _SCORE_EPSILON
+        - +inf              → 1.0 - _SCORE_EPSILON
+        - -inf              → _SCORE_EPSILON
+        - Exactly 0.0       → _SCORE_EPSILON
+        - Exactly 1.0       → 1.0 - _SCORE_EPSILON
+        - In (0, 1)         → unchanged
+        - Outside [0, 1]    → clamped to open interval
+    """
+    # Handle non-finite values first
+    if not math.isfinite(score):
+        return _SCORE_EPSILON if math.isnan(score) or score < 0 else (1.0 - _SCORE_EPSILON)
+
+    # Strict lower bound: never 0.0
+    if score <= 0.0:
+        return _SCORE_EPSILON
+
+    # Strict upper bound: never 1.0
+    if score >= 1.0:
+        return 1.0 - _SCORE_EPSILON
+
+    return score
 
 
 class ResearchGrader:
@@ -49,23 +100,21 @@ class ResearchGrader:
         Returns:
             Weighted composite score.
         """
-        rel = self.compute_relevance(filtered_paper_ids)
-        corr = self.compute_correctness(summaries)
-        comp = self.compute_completeness(summaries, explanations)
-        expl = self.compute_explanation_quality(explanations)
+        rel = _safe_bound(self.compute_relevance(filtered_paper_ids))
+        corr = _safe_bound(self.compute_correctness(summaries))
+        comp = _safe_bound(self.compute_completeness(summaries, explanations))
+        expl = _safe_bound(self.compute_explanation_quality(explanations))
 
         w = self.task.grading_weights
-        score = (
+        raw_score = (
             w["relevance"] * rel
             + w["correctness"] * corr
             + w["completeness"] * comp
             + w["explanation_quality"] * expl
         )
 
-        # Validator requires strict task scores in (0, 1).
-        # Clamp to a small open interval so boundary values are never returned.
-        epsilon = 1e-6
-        return max(epsilon, min(1.0 - epsilon, score))
+        # Final bounding: the only line that matters for validator compliance
+        return _safe_bound(raw_score)
 
     # -----------------------------------------------------------------
     # Individual metrics
@@ -206,7 +255,7 @@ class ResearchGrader:
         gt = set(self.task.ground_truth_paper_ids)
         retrieved = set(retrieved_paper_ids)
         overlap = len(gt & retrieved)
-        return 0.1 * (overlap / len(gt)) if gt else 0.0
+        return _safe_bound(0.1 * (overlap / len(gt)) if gt else 0.0)
 
     def compute_filter_reward(self, filtered_paper_ids: List[str]) -> float:
         """
@@ -214,7 +263,7 @@ class ResearchGrader:
 
         R = 0.15 * F1(filtered, gt)
         """
-        return 0.15 * self.compute_relevance(filtered_paper_ids)
+        return _safe_bound(0.15 * self.compute_relevance(filtered_paper_ids))
 
     def compute_summary_reward(self, paper_id: str, summary_text: str) -> float:
         """
@@ -224,14 +273,14 @@ class ResearchGrader:
         """
         ref_keywords = self.task.reference_keywords.get(paper_id, [])
         if not ref_keywords:
-            return 0.05  # small reward for summarizing any paper
+            return _safe_bound(0.05)  # small reward for summarizing any paper
 
         agent_words = self._tokenize(summary_text.lower())
         hits = sum(
             1 for kw in ref_keywords
             if self._keyword_in_text(kw.lower(), agent_words, summary_text.lower())
         )
-        return 0.2 * (hits / len(ref_keywords))
+        return _safe_bound(0.2 * (hits / len(ref_keywords)))
 
     def compute_explanation_reward(self, paper_id: str, explanation_text: str) -> float:
         """
@@ -243,7 +292,7 @@ class ResearchGrader:
 
         expl_keywords = self.task.explanation_keywords.get(paper_id, [])
         if not expl_keywords:
-            return 0.1 * readability  # partial credit
+            return _safe_bound(0.1 * readability)  # partial credit
 
         agent_words = self._tokenize(explanation_text.lower())
         hits = sum(
@@ -252,7 +301,7 @@ class ResearchGrader:
         )
         accuracy = hits / len(expl_keywords)
 
-        return 0.2 * (0.5 * readability + 0.5 * accuracy)
+        return _safe_bound(0.2 * (0.5 * readability + 0.5 * accuracy))
 
     # -----------------------------------------------------------------
     # Private helpers

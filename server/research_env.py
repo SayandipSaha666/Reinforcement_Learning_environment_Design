@@ -21,12 +21,12 @@ from openenv.core.env_server.types import State
 
 try:
     from data.paper_corpus import get_paper_by_id, search_papers
-    from graders.grader import ResearchGrader
+    from graders.grader import ResearchGrader, _safe_bound
     from models import PaperInfo, ResearchAction, ResearchObservation
     from tasks import get_task
 except ImportError:
     from ..data.paper_corpus import get_paper_by_id, search_papers
-    from ..graders.grader import ResearchGrader
+    from ..graders.grader import ResearchGrader, _safe_bound
     from ..models import PaperInfo, ResearchAction, ResearchObservation
     from ..tasks import get_task
 
@@ -366,12 +366,8 @@ class ResearchAssistantEnvironment(Environment):
         )
 
     def _bound_score(self, score: float) -> float:
-        """Ensure returned scores are strictly inside (0, 1)."""
-        if score <= 0.0:
-            return 0.001
-        if score >= 1.0:
-            return 0.999
-        return score
+        """Alias for _safe_bound for backward compatibility."""
+        return _safe_bound(score)
 
     @staticmethod
     def _build_paper_infos(paper_ids: List[str]) -> List[PaperInfo]:

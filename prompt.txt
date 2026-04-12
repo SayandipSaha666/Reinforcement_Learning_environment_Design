@@ -1,0 +1,50 @@
+You are a senior ML engineer with strong expertise in Reinforcement Learning, evaluation pipelines, and LLM-based grading systems.
+
+I am building an RL environment for training a research agent as part of the Meaty PyTorch OpenEnv Hackathon.
+
+I am encountering a validation failure during evaluation with the following error:
+
+"Not enough tasks with graders · One or more task scores are out of range"
+
+Hackathon requirements:
+1. At least 3 tasks must have graders.
+2. Each task score must be strictly within (0, 1), meaning:
+   - Score > 0.0
+   - Score < 1.0
+   - Scores equal to 0.0 or 1.0 are invalid.
+
+My setup:
+- I am using three tasks:
+  1. single_topic_retrieval
+  2. ambiguous_query_filtering
+  3. multi_concept_synthesis
+- Each task has a grader.
+- I am using bounded scoring logic intended to normalize outputs between 0 and 1.
+
+Problem:
+Despite this, validation fails with:
+- "Not enough tasks with graders"
+- "One or more task scores are out of range"
+
+What I need from you:
+1. Identify ALL possible root causes for:
+   - Tasks not being recognized as having graders
+   - Scores being exactly 0 or 1 despite normalization
+2. Suggest concrete debugging steps (logs, assertions, checks).
+3. Provide corrected pseudocode or code snippets for:
+   - Proper grader implementation
+   - Safe score normalization ensuring values are strictly within (0, 1)
+4. Highlight common mistakes in RL evaluation pipelines that could cause this issue.
+5. If relevant, explain edge cases like:
+   - Floating point rounding issues
+   - Improper task registration
+   - Silent failures in grader hooks
+
+Important:
+- Do NOT give generic advice.
+- Be precise and technical.
+- Assume I can modify both grader logic and task pipeline.
+
+Optional:
+If possible, suggest a robust scoring function that guarantees outputs stay within (0, 1) without clipping artifacts.
+also to run any file you can do so by deactivating the virtual environment and doing uv run python inference.py or anything files or uv run openenv validate
